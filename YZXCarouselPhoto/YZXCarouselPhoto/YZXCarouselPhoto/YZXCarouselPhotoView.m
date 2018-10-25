@@ -82,6 +82,9 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 //初始化timer
 - (void)p_creatTimer
 {
+    if (_dataSource.count == 0) {
+        return;
+    }
     [self p_removeTimer];
     self.timer = [NSTimer scheduledTimerWithTimeInterval:self.timeInterval target:self selector:@selector(carousel) userInfo:nil repeats:YES];
     [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:NSDefaultRunLoopMode];
