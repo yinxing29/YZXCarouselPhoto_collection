@@ -14,14 +14,30 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface YZXCarouselPhotoView : UIView
 
-- (instancetype)initWithFrame:(CGRect)frame
-                   dataSource:(NSArray * _Nullable)dataSource;
-
+/**
+ 点击回调
+ */
 @property (nonatomic, copy) YZXCarouselPhotoClickBlock         clickBlock;
 
-@property (nonatomic, copy) NSArray              *dataSource;
+/**
+ 本地数据源
+ */
+@property (nonatomic, copy) NSArray              *imageName;
 
+/**
+ 网络数据源
+ */
+@property (nonatomic, copy) NSArray              *imageUrl;
+
+/**
+ 设置轮播间隔时间
+ */
 @property (nonatomic, assign) NSTimeInterval     timeInterval;
+
+/**
+ 是否自动轮播
+ */
+@property (nonatomic, assign) BOOL               canCarousel;
 
 @end
 

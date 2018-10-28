@@ -12,8 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface YZXCarouselPhotoCollectionViewCell : UICollectionViewCell
 
-- (void)setImage:(NSString *)imageName;
-- (void)setUrlImage:(NSString *)imageUrl;
+- (void)setImage:(UIImage *)image;
 
 @end
 

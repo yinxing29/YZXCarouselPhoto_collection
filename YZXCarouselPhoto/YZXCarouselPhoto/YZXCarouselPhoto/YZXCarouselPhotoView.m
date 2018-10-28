@@ -9,6 +9,7 @@
 
 #import "YZXCarouselPhotoView.h"
 #import "YZXCarouselPhotoCollectionViewCell.h"
+#import <SDWebImage/UIImage+MultiFormat.h>
 
 @interface YZXCarouselPhotoView ()<UICollectionViewDelegate,UICollectionViewDataSource,UIScrollViewDelegate>
 
@@ -17,6 +18,10 @@
 @property (nonatomic, strong) NSTimer                          *timer;
 
 @property (nonatomic, strong) UILabel                          *pageLab;
+
+@property (nonatomic, copy) NSArray                            *dataSource;
+
+@property (nonatomic, assign) NSInteger                        dataSourceCountMultiple;
 
 /**
  防止修改pageLab的frame时触发layoutSubviews导致其他内容重新初始化
@@ -31,14 +36,17 @@ static const NSInteger kDataSourceCountMultiple = 1000;
 
 static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 
+- (void)awakeFromNib
+{
+    [super awakeFromNib];
+    [self p_initData];
+    [self p_initView];
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
-                   dataSource:(NSArray * _Nullable)dataSource
 {
     self = [super initWithFrame:frame];
     if (self) {
-        _dataSource = dataSource;
-        self.timeInterval = 2.0;
-        self.first = YES;
         [self p_initData];
         [self p_initView];
     }
@@ -47,7 +55,9 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 
 - (void)p_initData
 {
-    
+    self.timeInterval = 2.0;
+    self.first = YES;
+    self.canCarousel = YES;
 }
 
 - (void)p_initView
@@ -69,7 +79,11 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
      
         [self p_settingPageLabFrame];
         if (_dataSource.count != 0) {//防止传入空数组崩溃
-            [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:_dataSource.count * kDataSourceCountMultiple / 2 inSection:0] atScrollPosition:UICollectionViewScrollPositionNone animated:NO];
+            if (self.dataSourceCountMultiple == 1) {//不自动轮播
+                [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionNone animated:NO];
+            }else {
+                [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:_dataSource.count * self.dataSourceCountMultiple / 2 inSection:0] atScrollPosition:UICollectionViewScrollPositionNone animated:NO];
+            }
         }
         self.first = NO;
     }
@@ -82,7 +96,7 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 //初始化timer
 - (void)p_creatTimer
 {
-    if (_dataSource.count == 0) {
+    if (_dataSource.count == 0 || !self.canCarousel) {
         return;
     }
     [self p_removeTimer];
@@ -101,8 +115,8 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
     NSInteger item = self.collectionView.contentOffset.x / self.collectionView.bounds.size.width;
     BOOL animated = YES;
     //达到最大值是返回到中间
-    if (item == _dataSource.count * kDataSourceCountMultiple - 1) {
-        item = _dataSource.count * kDataSourceCountMultiple / 2 - 1;
+    if (item == _dataSource.count * self.dataSourceCountMultiple - 1) {
+        item = _dataSource.count * self.dataSourceCountMultiple / 2 - 1;
         animated = NO;
     }
     [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:item + 1 inSection:0] atScrollPosition:UICollectionViewScrollPositionNone animated:animated];
@@ -142,13 +156,13 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    return _dataSource.count * kDataSourceCountMultiple;
+    return _dataSource.count * self.dataSourceCountMultiple;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     YZXCarouselPhotoCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:kCollectionViewCellIdentify forIndexPath:indexPath];
-    [cell setUrlImage:_dataSource[indexPath.item % _dataSource.count]];
+    [cell setImage:_dataSource[indexPath.item % _dataSource.count]];
     return cell;
 }
 
@@ -162,9 +176,38 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 #pragma mark - ------------------------------------------------------------------------------------
 
 #pragma mark - setter
+- (void)setImageUrl:(NSArray *)imageUrl
+{
+    _imageName = nil;
+    _imageUrl = [imageUrl copy];
+    self.dataSource = [imageUrl copy];
+}
+
+- (void)setImageName:(NSArray *)imageName
+{
+    _imageUrl = nil;
+    _imageName = [imageName copy];
+    self.dataSource = [imageName copy];
+}
+
 - (void)setDataSource:(NSArray *)dataSource
 {
-    _dataSource = dataSource;
+    //对于传入的数组（imageName或者imageUrl）先统一转换成image
+    NSMutableArray *images = [NSMutableArray array];
+    if (_imageName) {
+        for (NSString *imageName in self.imageName) {
+            UIImage *image = [UIImage imageNamed:imageName];
+            [images addObject:image];
+        }
+        _dataSource = [images copy];
+    }else {
+        for (NSString *url in self.imageUrl) {
+            [images addObject:[UIImage sd_imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:url]]]];
+        }
+        _dataSource = [images copy];
+    }
+    
+    
     [self.collectionView reloadData];
     self.pageLab.text = [NSString stringWithFormat:@"%d/%ld",1,_dataSource.count];
 }
@@ -178,6 +221,16 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 - (void)setClickBlock:(YZXCarouselPhotoClickBlock)clickBlock
 {
     _clickBlock = clickBlock;
+}
+
+- (void)setCanCarousel:(BOOL)canCarousel
+{
+    _canCarousel = canCarousel;
+    if (_canCarousel) {
+        self.dataSourceCountMultiple = kDataSourceCountMultiple;
+    }else {
+        self.dataSourceCountMultiple = 1;
+    }
 }
 
 #pragma mark - ------------------------------------------------------------------------------------

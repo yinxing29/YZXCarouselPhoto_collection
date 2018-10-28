@@ -7,7 +7,6 @@
 //
 
 #import "YZXCarouselPhotoCollectionViewCell.h"
-#import <SDWebImage/UIImageView+WebCache.h>
 
 @interface YZXCarouselPhotoCollectionViewCell ()
 
@@ -38,14 +37,9 @@
     self.imageView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height);
 }
 
-- (void)setImage:(NSString *)imageName
+- (void)setImage:(UIImage *)image
 {
-    self.imageView.image = [UIImage imageNamed:imageName];
-}
-
-- (void)setUrlImage:(NSString *)imageUrl
-{
-    [self.imageView sd_setImageWithURL:[NSURL URLWithString:imageUrl]];
+    self.imageView.image = image;
 }
 
 #pragma mark - 懒加载
