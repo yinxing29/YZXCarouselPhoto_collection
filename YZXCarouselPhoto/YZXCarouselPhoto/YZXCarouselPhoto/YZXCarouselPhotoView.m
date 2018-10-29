@@ -192,24 +192,27 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
 
 - (void)setDataSource:(NSArray *)dataSource
 {
-    //对于传入的数组（imageName或者imageUrl）先统一转换成image
-    NSMutableArray *images = [NSMutableArray array];
-    if (_imageName) {
-        for (NSString *imageName in self.imageName) {
-            UIImage *image = [UIImage imageNamed:imageName];
-            [images addObject:image];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        //对于传入的数组（imageName或者imageUrl）先统一转换成image
+        NSMutableArray *images = [NSMutableArray array];
+        if (self->_imageName) {
+            for (NSString *imageName in self.imageName) {
+                UIImage *image = [UIImage imageNamed:imageName];
+                [images addObject:image];
+            }
+            self->_dataSource = [images copy];
+        }else {
+            for (NSString *url in self.imageUrl) {
+                [images addObject:[UIImage sd_imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:url]]]];
+            }
+            self->_dataSource = [images copy];
         }
-        _dataSource = [images copy];
-    }else {
-        for (NSString *url in self.imageUrl) {
-            [images addObject:[UIImage sd_imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:url]]]];
-        }
-        _dataSource = [images copy];
-    }
-    
-    
-    [self.collectionView reloadData];
-    self.pageLab.text = [NSString stringWithFormat:@"%d/%ld",1,_dataSource.count];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.collectionView reloadData];
+            self.pageLab.text = [NSString stringWithFormat:@"%d/%ld",1,self->_dataSource.count];
+        });
+    });
 }
 
 - (void)setTimeInterval:(NSTimeInterval)timeInterval
