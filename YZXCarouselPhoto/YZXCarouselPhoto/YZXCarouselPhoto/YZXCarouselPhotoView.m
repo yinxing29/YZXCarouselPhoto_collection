@@ -203,7 +203,10 @@ static NSString *kCollectionViewCellIdentify = @"collectionViewCell_identify";
             self->_dataSource = [images copy];
         }else {
             for (NSString *url in self.imageUrl) {
-                [images addObject:[UIImage sd_imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:url]]]];
+                UIImage *image = [UIImage sd_imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:url]]];
+                if (image) {
+                    [images addObject:image];
+                }
             }
             self->_dataSource = [images copy];
         }
